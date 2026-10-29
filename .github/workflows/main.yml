@@ -1,0 +1,49 @@
+
+name: Build MOVEX PEMP APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Android
+        uses: android-actions/setup-android@v3
+
+      - name: Buscar archivos del proyecto
+        run: |
+          echo "Archivos encontrados:"
+          find . -maxdepth 4 -type f | sort | head -200
+
+      - name: Compilar APK si existe Gradle
+        run: |
+          if [ -f ./gradlew ]; then
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          elif [ -f ./app/gradlew ]; then
+            cd app
+            chmod +x ./gradlew
+            ./gradlew assembleDebug
+          else
+            echo "No se encuentra gradlew. Hay que comprobar la estructura del proyecto."
+            exit 1
+          fi
+
+      - name: Guardar APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MOVEX-PEMP-APK
+          path: '**/build/outputs/apk/debug/*.apk'
+          if-no-files-found: error
